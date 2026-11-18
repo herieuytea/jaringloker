@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="id"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Jaring Loker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  /* Layout: sticky filter bar at top feeds a grid of portal cards; each card states which filters it applies automatically vs. manually */
+  :root{
+    color-scheme:light;
+    --bg:#eef0f4; --surface:#ffffff; --surface-2:#f6f7fa; --fg:#1a2030; --muted:#5b6472;
+    --accent:#b9780f; --accent-fg:#ffffff; --border:#dde1e8; --ok:#1f7a4d; --ok-bg:#e4f3ea;
+    --warn:#946b00; --warn-bg:#fbf0db; --info:#2f5fc4; --info-bg:#e6ecfb; --shadow:0 1px 2px rgba(20,24,34,.06),0 8px 24px -16px rgba(20,24,34,.25);
+    --font-display:'Plus Jakarta Sans',Inter,system-ui,sans-serif; --font-body:Inter,system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#10141c; --surface:#171c27; --surface-2:#1d2330; --fg:#e9ecf2; --muted:#93a0b4;
+      --accent:#e8ae4d; --accent-fg:#1a1200; --border:#2a3140; --ok:#6fd6a2; --ok-bg:#163226;
+      --warn:#f0c766; --warn-bg:#2e2510; --info:#8fb0f5; --info-bg:#1a2740; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -16px rgba(0,0,0,.6);
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#10141c; --surface:#171c27; --surface-2:#1d2330; --fg:#e9ecf2; --muted:#93a0b4;
+    --accent:#e8ae4d; --accent-fg:#1a1200; --border:#2a3140; --ok:#6fd6a2; --ok-bg:#163226;
+    --warn:#f0c766; --warn-bg:#2e2510; --info:#8fb0f5; --info-bg:#1a2740; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -16px rgba(0,0,0,.6);
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--fg);font-family:var(--font-body);margin:0;
+    padding-left:max(16px, env(safe-area-inset-left,0px));padding-right:max(16px, env(safe-area-inset-right,0px));}
+  .wrap{max-width:860px;margin:0 auto;padding-block:28px 48px;}
+  h1{font-family:var(--font-display);font-weight:700;font-size:clamp(26px,5vw,34px);margin:0 0 4px;letter-spacing:-.01em;text-wrap:balance;}
+  .tagline{color:var(--muted);font-size:15px;margin:0 0 24px;max-width:56ch;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);}
+  .filters{padding:20px;margin-bottom:22px;}
+  .filters h2{font-family:var(--font-display);font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 14px;font-weight:600;}
+  .grid-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
+  @media (max-width:520px){.grid-filters{grid-template-columns:1fr;}}
+  .field{display:flex;flex-direction:column;gap:6px;min-width:0;}
+  .field label{font-size:12.5px;font-weight:600;color:var(--muted);}
+  .field input, .field select{
+    font-family:var(--font-body);font-size:15px;padding:10px 12px;border-radius:10px;
+    border:1px solid var(--border);background:var(--surface-2);color:var(--fg);width:100%;
+  }
+  .field input:focus, .field select:focus{outline:2px solid var(--accent);outline-offset:1px;}
+
+  .info{display:flex;gap:10px;align-items:flex-start;background:var(--ok-bg);border:1px solid var(--border);
+    border-radius:12px;padding:12px 14px;margin:0 0 22px;font-size:13.5px;line-height:1.5;color:var(--fg);}
+  .info b{color:var(--ok);}
+
+  .section-label{font-family:var(--font-display);font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;margin:0 0 12px;}
+  .portals{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;}
+  .portal{padding:18px;display:flex;flex-direction:column;gap:10px;min-width:0;}
+  .portal-top{display:flex;align-items:center;gap:10px;}
+  .badge-letter{width:34px;height:34px;flex:none;border-radius:9px;background:var(--accent);color:var(--accent-fg);
+    display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:15px;}
+  .portal-name{font-family:var(--font-display);font-weight:700;font-size:16px;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{font-size:11.5px;padding:3px 8px;border-radius:999px;border:1px solid var(--border);color:var(--muted);white-space:nowrap;}
+  .chip.auto{background:var(--ok-bg);color:var(--ok);border-color:transparent;}
+  .chip.manual{background:var(--warn-bg);color:var(--warn);border-color:transparent;}
+  .chip.via{background:var(--info-bg);color:var(--info);border-color:transparent;}
+  .portal-note{font-size:12.5px;color:var(--muted);line-height:1.45;min-height:0;}
+  .open-btn{margin-top:auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    background:var(--accent);color:var(--accent-fg);text-decoration:none;font-weight:600;font-size:14px;
+    padding:10px 14px;border-radius:10px;}
+  .open-btn:active{opacity:.85;}
+  .filter-actions{display:flex;gap:10px;margin-top:14px;}
+  .filter-actions .open-btn{flex:1;border:0;cursor:pointer;font-family:inherit;}
+  .filter-actions .open-btn.ghost{background:var(--surface-2);color:var(--fg);border:1px solid var(--border);}
+
+
+  /* --- Perbaikan UI terpotong --- */
+  html,body{overflow-x:hidden;}
+  .wrap{width:100%;min-width:0;}
+  .card,.filters,.portal,.field,.portal-note,.info,.legend{min-width:0;overflow-wrap:anywhere;}
+  .portals{grid-template-columns:repeat(auto-fill,minmax(min(250px,100%),1fr));}
+  .portal{overflow:hidden;}
+  .portal-top{min-width:0;}
+  .portal-name{min-width:0;overflow-wrap:anywhere;}
+  .chips{max-width:100%;}
+  .chip{white-space:normal;text-align:left;overflow-wrap:anywhere;}
+  .info{overflow-wrap:anywhere;}
+  .open-btn{width:100%;overflow-wrap:anywhere;}
+  .field input,.field select{min-width:0;}
+  .legend{margin-top:22px;font-size:12.5px;color:var(--muted);line-height:1.6;}
+  .legend .chip{vertical-align:middle;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Jaring Loker</h1>
+  <p class="tagline">Satu filter, delapan portal. Isi kriteria sekali, lalu buka hasil pencarian yang sudah disetel di tiap portal lowongan kerja Indonesia.</p>
+
+  <div class="card filters">
+    <h2>Filter pencarian</h2>
+    <div class="grid-filters">
+      <div class="field">
+        <label for="bidang">Bidang / kata kunci</label>
+        <input id="bidang" type="text" placeholder="mis. video editor" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="kota">Kota</label>
+        <input id="kota" type="text" placeholder="mis. Jakarta" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="status">Status kepegawaian</label>
+        <select id="status">
+          <option value="">Semua status</option>
+          <option value="fulltime">Penuh waktu</option>
+          <option value="parttime">Paruh waktu</option>
+          <option value="contract">Kontrak</option>
+          <option value="internship">Magang</option>
+          <option value="freelance">Freelance</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="durasi">Diposting dalam</label>
+        <select id="durasi">
+          <option value="">Kapan saja</option>
+          <option value="1">24 jam terakhir</option>
+          <option value="3">3 hari terakhir</option>
+          <option value="7">7 hari terakhir</option>
+          <option value="14">14 hari terakhir</option>
+          <option value="30">30 hari terakhir</option>
+        </select>
+      </div>
+    </div>
+    <div class="filter-actions">
+      <button type="button" class="open-btn" id="simpanFilter">Simpan filter</button>
+      <button type="button" class="open-btn ghost" id="panggilFilter">Panggil filter</button>
+    </div>
+  </div>
+
+  <div class="info"><span>✓</span><span><b>Soal lowongan aktif:</b> portal lowongan otomatis menyembunyikan posting yang sudah ditutup atau kedaluwarsa, jadi hasil pencarian yang tampil memang yang masih dibuka. Pakai filter "Diposting dalam" di atas untuk mengutamakan posting yang paling baru dan paling kecil kemungkinan sudah penuh kuota. Tautan LinkedIn, Indeed, dan Jobstreet di bawah sudah otomatis diurutkan dari yang paling baru diposting. Glints dan KitaLulus diurutkan menurut tanggal versi Google (bisa meleset dari tanggal posting asli); portal lain belum punya parameter urutan yang terkonfirmasi, jadi urutkan manual lewat opsi "Terbaru" di halaman masing-masing.</span></div>
+
+  <p class="section-label">Buka pencarian di portal</p>
+  <div class="portals" id="portals"></div>
+
+  <div class="legend">
+    <span class="chip auto">Hijau</span> = filter diterapkan langsung lewat parameter resmi portal &nbsp;·&nbsp;
+    <span class="chip via">Biru</span> = portal ini tidak mempublikasikan parameter pencarian yang stabil, jadi dibuka lewat pencarian Google yang disaring ke situs itu &nbsp;·&nbsp;
+    <span class="chip manual">Kuning</span> = perlu diatur sendiri setelah halaman terbuka.
+  </div>
+</div>
+
+<script>
+(function(){
+  var els = {
+    bidang: document.getElementById('bidang'),
+    kota: document.getElementById('kota'),
+    status: document.getElementById('status'),
+    durasi: document.getElementById('durasi')
+  };
+
+  var STORE_KEY = 'jaringloker_filters_v1';
+  try{
+    var saved = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+    els.bidang.value = ''; // bidang selalu dibuka dalam keadaan kosong
+    els.kota.value = ''; // kota selalu dibuka dalam keadaan kosong, sama seperti bidang
+    if(saved.status) els.status.value = saved.status;
+    if(saved.durasi) els.durasi.value = saved.durasi;
+  }catch(e){}
+
+  function saveState(){
+    try{
+      localStorage.setItem(STORE_KEY, JSON.stringify({
+        status: els.status.value, durasi: els.durasi.value // bidang dan kota tidak ikut tersimpan otomatis
+      }));
+    }catch(e){}
+  }
+
+  var LINKEDIN_JT = {fulltime:'F', parttime:'P', contract:'C', internship:'I'}; // freelance unsupported
+  var INDEED_JT = {fulltime:'fulltime', parttime:'parttime', contract:'contract', internship:'internship'}; // freelance unsupported
+  var KALIBRR_T = {fulltime:'full-time', parttime:'part-time', contract:'contractual', freelance:'freelance'}; // internship uses the w/ segment instead
+  var JOBSTREET_DATE = {1:1, 3:3, 7:7, 14:14, 30:31}; // platform SEEK hanya menerima 1/3/7/14/31
+  var STATUS_KEYWORD = {fulltime:'full time', parttime:'part time', contract:'kontrak', internship:'magang intern', freelance:'freelance'};
+
+  function qs(params){
+    var parts = [];
+    for(var k in params){
+      if(params[k] === '' || params[k] == null) continue;
+      parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(params[k]));
+    }
+    return parts.join('&');
+  }
+
+  function slugify(s){
+    return s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-+|-+$)/g, '');
+  }
+
+  function afterDate(days){
+    var d = new Date();
+    d.setDate(d.getDate() - parseInt(days,10));
+    var mm = String(d.getMonth()+1).padStart(2,'0');
+    var dd = String(d.getDate()).padStart(2,'0');
+    return d.getFullYear() + '-' + mm + '-' + dd;
+  }
+
+  var PORTALS = [
+    {
+      id:'linkedin', name:'LinkedIn', letter:'Li',
+      auto:{bidang:true, kota:true, status:'partial', durasi:true},
+      note:'Freelance tidak punya opsi tersendiri di LinkedIn — pilih status lain untuk memfilter, atau biarkan "Semua status" lalu saring manual.',
+      build:function(f){
+        var p = {keywords:f.bidang, location:f.kota, sortBy:'DD'};
+        if(f.status && LINKEDIN_JT[f.status]) p.f_JT = LINKEDIN_JT[f.status];
+        if(f.durasi) p.f_TPR = 'r' + (parseInt(f.durasi,10) * 86400);
+        return 'https://www.linkedin.com/jobs/search/?' + qs(p);
+      }
+    },
+    {
+      id:'indeed', name:'Indeed Indonesia', letter:'In',
+      auto:{bidang:true, kota:true, status:'partial', durasi:true},
+      note:'Freelance tidak ada kategori tersendiri di Indeed — hasil akan tampil di "Semua status".',
+      build:function(f){
+        var p = {q:f.bidang, l:f.kota, sort:'date'};
+        if(f.status && INDEED_JT[f.status]) p.jt = INDEED_JT[f.status];
+        if(f.durasi) p.fromage = f.durasi;
+        return 'https://id.indeed.com/jobs?' + qs(p);
+      }
+    },
+    {
+      id:'jobstreet', name:'Jobstreet Indonesia', letter:'Js',
+      auto:{bidang:true, kota:true, status:false, durasi:true},
+      note:'Hasil diurutkan dari yang terbaru dan filter tanggal diterapkan otomatis (30 hari dibulatkan ke 31 sesuai opsi Jobstreet). Jenis pekerjaan atur manual lewat panel filter di Jobstreet, karena struktur URL-nya berisiko salah jika dipaksakan.',
+      build:function(f){
+        var p = {keywords:f.bidang, where:f.kota, sortmode:'ListedDate'};
+        if(f.durasi) p.daterange = JOBSTREET_DATE[f.durasi];
+        return 'https://id.jobstreet.com/id/jobs?' + qs(p);
+      }
+    },
+    {
+      id:'glints', name:'Glints Indonesia', letter:'Gl',
+      auto:{bidang:'via', kota:'via', status:'via', durasi:'via'},
+      note:'Glints tidak mempublikasikan parameter pencarian yang stabil di URL-nya (ini sebabnya tautan versi sebelumnya tidak bisa terbuka), jadi tombol ini membuka pencarian Google yang disaring khusus ke glints.com, diurutkan berdasarkan tanggal terbaru dan dibatasi maksimal 14 hari terakhir (otomatis, walau filter "Diposting dalam" diset lebih lama), dan kota yang diisi diwajibkan muncul di hasil. Hasilnya tetap halaman asli Glints, hanya saja lewat jalur pencarian, bukan filter bawaan situsnya.',
+      build:function(f){
+        var parts = ['site:glints.com', f.bidang, (f.kota ? '"' + f.kota + '"' : ''), 'lowongan kerja']; // kota dikutip agar Google mewajibkan kata kota muncul di hasil
+        if(f.status && STATUS_KEYWORD[f.status]) parts.push(STATUS_KEYWORD[f.status]);
+        // Glints dibatasi maksimal 14 hari terakhir; kalau filter durasi lebih pendek, pakai yang lebih pendek
+        var days = f.durasi ? Math.min(parseInt(f.durasi,10), 14) : 14;
+        parts.push('after:' + afterDate(days));
+        var q = parts.filter(Boolean).join(' ');
+        return 'https://www.google.com/search?' + qs({q:q, tbs:'sbd:1,qdr:d' + days});
+      }
+    },
+    {
+      id:'kalibrr', name:'Kalibrr', letter:'Kb',
+      auto:{bidang:true, kota:true, status:true, durasi:false},
+      note:'Magang di Kalibrr dikategorikan sebagai tingkat pengalaman, bukan jenis pekerjaan, jadi tautan ini menyesuaikan otomatis. Tanggal posting tidak punya parameter URL di Kalibrr — saring manual lewat urutan "Terbaru" di halaman hasil.',
+      build:function(f){
+        var seg = ['home', 'co', 'Indonesia'];
+        if(f.kota) seg.push('l', encodeURIComponent(f.kota));
+        if(f.status === 'internship') seg.push('w', '100-internship-or-ojt');
+        else if(f.status && KALIBRR_T[f.status]) seg.push('t', KALIBRR_T[f.status]);
+        var slug = slugify(f.bidang);
+        if(slug) seg.push('te', slug);
+        seg.push('1');
+        return 'https://www.kalibrr.com/' + seg.join('/');
+      }
+    },
+    {
+      id:'kitalulus', name:'KitaLulus', letter:'Kl',
+      auto:{bidang:'via', kota:'via', status:'via', durasi:'via'},
+      note:'URL pencarian asli KitaLulus berubah-ubah tergantung kombinasi filter sehingga tidak bisa disetel otomatis dengan andal, jadi tombol ini membuka pencarian Google yang disaring khusus ke kitalulus.com, diurutkan berdasarkan tanggal terbaru, dibatasi maksimal 14 hari terakhir (otomatis), dan kota yang diisi diwajibkan muncul di hasil — tetap mengarah ke halaman loker asli KitaLulus.',
+      build:function(f){
+        var parts = ['site:kitalulus.com', f.bidang, (f.kota ? '"' + f.kota + '"' : ''), 'lowongan'];
+        if(f.status && STATUS_KEYWORD[f.status]) parts.push(STATUS_KEYWORD[f.status]);
+        // KitaLulus dibatasi maksimal 14 hari terakhir; kalau filter durasi lebih pendek, pakai yang lebih pendek
+        var days = f.durasi ? Math.min(parseInt(f.durasi,10), 14) : 14;
+        parts.push('after:' + afterDate(days));
+        var q = parts.filter(Boolean).join(' ');
+        return 'https://www.google.com/search?' + qs({q:q, tbs:'sbd:1,qdr:d' + days});
+      }
+    },
+    {
+id:'dealls', name:'Dealls', letter:'De',
+      auto:{bidang:false, kota:false, status:false, durasi:false},
+      note:'Halaman hasil filter Dealls ternyata tidak bisa dibuka dengan andal, jadi tombol ini membuka homepage Dealls langsung — di sana ada kotak pencarian dan panel filter (Level, Jenis, Tipe, Lokasi, Gaji) yang bisa dipakai untuk menyaring manual.',
+      build:function(f){ return 'https://dealls.com/'; }
+    },
+    {
+      id:'googlejobs', name:'Google Penelusuran Kerja', letter:'G',
+      auto:{bidang:true, kota:true, status:'via', durasi:false},
+      note:'Menampilkan widget Google untuk Lowongan Kerja, yang merangkum lowongan dari banyak situs sekaligus (termasuk Jobstreet, LinkedIn, dan situs perusahaan langsung). Filter tanggal posting tidak dipaksakan lewat URL karena operator pencarian tidak andal di widget ini — pakai chip "Tanggal posting" bawaan widget setelah terbuka.',
+      build:function(f){
+        var parts = [f.bidang, f.kota, 'lowongan kerja'];
+        if(f.status && STATUS_KEYWORD[f.status]) parts.push(STATUS_KEYWORD[f.status]);
+        var q = parts.filter(Boolean).join(' ');
+        return 'https://www.google.com/search?' + qs({q:q, udm:'8'});
+      }
+    }
+  ];
+
+  function chip(state){
+    if(state === true) return '<span class="chip auto">otomatis</span>';
+    if(state === 'partial') return '<span class="chip auto">otomatis (sebagian)</span>';
+    if(state === 'via') return '<span class="chip via">lewat Google</span>';
+    return '<span class="chip manual">manual</span>';
+  }
+
+  var container = document.getElementById('portals');
+  container.innerHTML = PORTALS.map(function(p){
+    return '' +
+    '<div class="card portal">' +
+      '<div class="portal-top"><div class="badge-letter">' + p.letter + '</div><div class="portal-name">' + p.name + '</div></div>' +
+      '<div class="chips">' +
+        '<span class="chip">Bidang ' + chip(p.auto.bidang) + '</span>' +
+        '<span class="chip">Kota ' + chip(p.auto.kota) + '</span>' +
+        '<span class="chip">Status ' + chip(p.auto.status) + '</span>' +
+        '<span class="chip">Durasi ' + chip(p.auto.durasi) + '</span>' +
+      '</div>' +
+      '<div class="portal-note">' + p.note + '</div>' +
+      '<a class="open-btn" data-id="' + p.id + '" href="#" target="_blank" rel="noopener">Buka pencarian →</a>' +
+    '</div>';
+  }).join('');
+
+  function currentFilters(){
+    return {bidang: els.bidang.value.trim(), kota: els.kota.value.trim(), status: els.status.value, durasi: els.durasi.value};
+  }
+
+  function updateLinks(){
+    var f = currentFilters();
+    PORTALS.forEach(function(p){
+      var a = container.querySelector('a[data-id="' + p.id + '"]');
+      if(a) a.setAttribute('href', p.build(f));
+    });
+    saveState();
+  }
+
+  var SAVED_KEY = 'jaringloker_saved_filter_v1';
+  function flashBtn(btn, text){
+    if(!btn.dataset.label) btn.dataset.label = btn.textContent;
+    clearTimeout(btn._t);
+    btn.textContent = text;
+    btn._t = setTimeout(function(){ btn.textContent = btn.dataset.label; }, 1500);
+  }
+  document.getElementById('simpanFilter').addEventListener('click', function(){
+    try{
+      localStorage.setItem(SAVED_KEY, JSON.stringify(currentFilters()));
+      flashBtn(this, 'Tersimpan ✓');
+    }catch(e){ flashBtn(this, 'Gagal menyimpan'); }
+  });
+  document.getElementById('panggilFilter').addEventListener('click', function(){
+    try{
+      var f = JSON.parse(localStorage.getItem(SAVED_KEY) || 'null');
+      if(!f){ flashBtn(this, 'Belum ada yang disimpan'); return; }
+      els.bidang.value = f.bidang || '';
+      els.kota.value = f.kota || '';
+      els.status.value = f.status || '';
+      els.durasi.value = f.durasi || '';
+      updateLinks();
+      flashBtn(this, 'Dipanggil ✓');
+    }catch(e){ flashBtn(this, 'Tidak bisa dipanggil'); }
+  });
+
+  Object.keys(els).forEach(function(k){
+    els[k].addEventListener(els[k].tagName === 'SELECT' ? 'change' : 'input', updateLinks);
+  });
+
+  updateLinks();
+})();
+</script>
+
+</body></html>
